@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, ipcRenderer, dialog, ipcMain } from "electron";
 import { FsOperations } from "./fsOperations";
 declare const MAIN_WINDOW_WEBPACK_ENTRY: any;
 
@@ -37,7 +37,7 @@ const createWindow = (): void => {
       y: value.y,
       minWidth: 300,
       minHeight: 400,
-      maxWidth: 500,
+      // maxWidth: 500,
       autoHideMenuBar: true,
       webPreferences: {
         nodeIntegration: true,
@@ -53,7 +53,7 @@ const createWindow = (): void => {
     });
 
     mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
-    
+
   });
 };
 
@@ -82,3 +82,40 @@ app.on("activate", () => {
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
+
+
+// Creates a file dialogto open a json file | DOC: https://www.electronjs.org/docs/api/dialog
+
+ipcMain.on('open-file-dialog-for-file', (event) => {
+  if (process.platform === 'linux' || process.platform === 'win32') {
+    dialog.showOpenDialog({
+      filters: [{ name: "NoteFiles", extensions: ["json"] }],
+      properties: ['openFile']
+    }).then((files: any) => {
+
+      if (files) {
+        if (!files.canceled) {
+          event.sender.send('selected-file', files.filePaths[0]);
+        } else {
+          event.sender.send('selected-file', undefined);
+        }
+      }
+
+    });
+  } else {
+    dialog.showOpenDialog({
+      filters: [{ name: "NoteFiles", extensions: ["json"] }],
+      properties: ['openFile', 'openDirectory']
+    }).then((files: any) => {
+      
+      if (files) {
+        if (!files.canceled) {
+          event.sender.send('selected-file', files.filePaths[0]);
+        } else {
+          event.sender.send('selected-file', undefined);
+        }
+      }
+
+    });
+  }
+});

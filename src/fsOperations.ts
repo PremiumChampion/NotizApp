@@ -2,14 +2,8 @@ import electron from "electron";
 import * as fs from "fs";
 import * as path from "path";
 
-export interface IFsOperationsOpts {
-    /**
-     * the name of the file (including the extention)
-     *
-     * @type {string}
-     * @memberof IFsOperationsOpts
-     */
-    fileName: string;
+export interface IFsBaseOperationsOpts {
+    
     /**
      * the default value of the file
      *
@@ -28,23 +22,44 @@ export interface IFsOperationsOpts {
     path?: string;
 };
 
+export interface IFsFileNameOperationsOpts extends IFsBaseOperationsOpts {
+    /**
+     * the name of the file (including the extention)
+     *
+     * @type {string}
+     * @memberof IFsOperationsOpts
+     */
+    fileName: string;
+    fullPath?: string;
+};
+
+export interface IFsFullPathOperationOpts extends IFsBaseOperationsOpts{
+    fileName?: string;
+    fullPath: string;
+}
+
+export type IFsOperationOpts = IFsFullPathOperationOpts | IFsFileNameOperationsOpts;
+
 export class FsOperations {
 
     private path: string;
     private data: any;
     private default: any;
 
-    constructor(opts: IFsOperationsOpts) {
+    constructor(opts: IFsOperationOpts) {
         // Renderer process has to get `app` module via `remote`, whereas the main process can get it directly
         // app.getPath('userData') will return a string of the user's app data directory path.
         // We'll use the `configName` property to set the file name and path.join to bring it all together as a string
-        if (opts.path) {
-            this.path = path.join(opts.path, opts.fileName);
+        if (opts.fullPath) {
+            this.path = opts.fullPath;
         } else {
-            const userDataPath = (electron.app || electron.remote.app).getPath('userData');
-            this.path = path.join(userDataPath, opts.fileName);
+            if (opts.path) {
+                this.path = path.join(opts.path, opts.fileName);
+            } else {
+                const userDataPath = (electron.app || electron.remote.app).getPath('userData');
+                this.path = path.join(userDataPath, opts.fileName);
+            }
         }
-
         this.get(true)
             .then((value: string | Object) => {
                 this.data = value;
@@ -115,5 +130,9 @@ export class FsOperations {
             }
 
         })
+    }
+
+    public getFilePath(): string{
+        return this.path;
     }
 }
